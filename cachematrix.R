@@ -99,6 +99,10 @@ makeCacheMatrix <- function(mat = matrix()) {
 
 ## Given x, a CacheMatrix as returned by makeCacheMatrix,
 ## return the inverse of 'x' as a simple, 'proper'  Matrix.
+##
+## If feasible, use previously cached copy, rather than computing
+## the inverse anew. This should execute faster and use fewer compute
+## resources.
 
 cacheSolve <- function(x, ...) {
 
