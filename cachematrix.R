@@ -7,7 +7,19 @@
 # Based on template & sample code provided to the Fall 2015 Corsera "R
 # programming" course (rprog-033). Submitted as Programming Assignment 2 for
 # that course.
+#
+# As always, I am indebted to & freely make use of many public domain
+# StackOverflow & general WWW articles; for concepts, not actual work.
 
+# I have commented this code more heavily than I normally would, so that
+# I have a sporting chance of remembering/re-discovering some of the
+# finer details of memory mangement and of the super-assignment (<<-)
+# operator when I re-visit the code in six months or a year.
+#
+# One can skip the "too long" Description section by searching for the
+# text "Code:" below.
+
+# Description:
 # Matrix inversion is a computationally expensive task for moderate to
 # large arrays. In some workloads the same matrix is inverted more
 # than once. While the cost of the first inversion can not be avoided,
@@ -56,23 +68,65 @@
 #   [2,]    0	 1    0
 #   [3,]    0	 0    1
 
-# Honor Code declaration
-#  While the work in this file is my own, it draws heavily on
-#  the example provided in the assignment.
-#    https://class.coursera.org/rprog-033/human_grading\
-#	 /view/courses/975107/assessments/3/submissions
+# A note on memory management:
+#   The memory in the cached inverse matrix can be large when the
+#   original memory is large (where large is defined by the amount
+#   of memory available on the hardware.)
+#
+#   That cached memory follows the usual R rules: It is released
+#   for possibly later gargage collection (gc()) when it goes out
+#   of scope, either at the end of a function or when the last reference
+#   has been removed.
+#
+#   dummy <- function () {
+#     elements <- c(1, rep(0, 3), 2, rep(0,3), 1)
+#      m <- matrix(elements, nrow=3, ncol = 3)
+#      cm <- cachematrix(m)
+#      mInv <- cacheSolve(cm)
+#      # work with mInv
+#      # do work
+# } # mInv goes out of scope here
+#   # cm & cache inside of become available for garbage collection.
+#
+#   Now, if the "do work" part is more like
+#   " do lots of work with other large arrays which does not involve cm"
+#   one may want to manually release cm and recover memory at that point:
+#	rm(cm)
 
-
+# Code:
+#
 # Return a matrix analog function (pseudo-class CacheMatrix).
-# which later gets passed to cacheSolve() & invoked to save
-# a copy of the first matrix inversion so that copy can be
-# returned on subsequent calls with an unchanged matrix.
+# which later gets passed to cacheSolve() & invoked.
+# This function saves a copy of the first matrix inversion
+# so that saved copy can be quickly & efficiently returned
+# on subsequent calls with an unchanged matrix.
+#
+# Note on namespace management.
+# Because both variable mat and matInv have previosul been declared in the
+# parent (immediatly enclosing) environment of the makeCAsheMatrix::set()
+# funtion, the super-assignment (<<-) operator used in set() will find &
+# set them at that parent levels. The instances of the two variable will be
+# visible only to the unique function instance returned at each call to
+# makeCacheMatrix. This establishes separate namespaces for each function
+# and keeps the base/global environment uncluttered.
+#
+# E.g.:
+#   cm <- cachematrix(m)
+#   cm2 <- cachematrix(m2)
+#
+# Variables mat & matInv inside cm & cm2 are distinct. They can and most
+# likely do have separate values.
+#
 
 makeCacheMatrix <- function(mat = matrix()) {
 
-  matInv <- NULL
+  # Two declarations required for proper/intended namespace management magic.
+  # variable mat, declared above, is required at this level
+  matInv <- NULL  # required for namespace management
 
   set <- function(y) {
+  # Powerful Magic Happens Here!"
+  # See "Note on namespace management" in function description above.
     mat <<- y
     matInv <<- NULL
   }
@@ -101,7 +155,7 @@ makeCacheMatrix <- function(mat = matrix()) {
 ## return the inverse of 'x' as a simple, 'proper'  Matrix.
 ##
 ## If feasible, use previously cached copy, rather than computing
-## the inverse anew. This should execute faster and use fewer compute
+## the inverse anew. This should execute more quickly and use fewer compute
 ## resources.
 
 cacheSolve <- function(x, ...) {
